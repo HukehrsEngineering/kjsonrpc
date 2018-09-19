@@ -1,0 +1,5 @@
+rootProject.name = 'kjsonrpc'
+include 'kjsonrpcdemoshared'
+include 'kjsonrpcserverdemo'
+include 'kjsonrpcclientdemo'
+

@@ -1,0 +1,3 @@
+package org.hukehrs.kjsonrpc.authentication
+
+internal class AutoAuthenticationHolderTest

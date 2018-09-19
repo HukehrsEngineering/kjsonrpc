@@ -1,0 +1,15 @@
+package org.hukehrs.kjsonrpc.server
+
+data class MethodIdentifier(val iface: String, val methodName: String) {
+    companion object {
+        fun createFromFullName(fullName: String): MethodIdentifier
+        {
+            if(fullName.indexOf('.') == -1)
+            {
+                throw IllegalArgumentException("method name $fullName is invalid")
+            }
+            val parts = fullName.split(delimiters = *charArrayOf('.'), ignoreCase = true, limit = 2)
+            return MethodIdentifier(parts[0], parts[1])
+        }
+    }
+}
