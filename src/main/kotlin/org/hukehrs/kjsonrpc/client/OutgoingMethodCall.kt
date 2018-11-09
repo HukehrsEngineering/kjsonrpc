@@ -3,7 +3,7 @@ package org.hukehrs.kjsonrpc.client
 import org.hukehrs.kjsonrpc.jsonrpc.JsonRpcObject
 import java.util.*
 
-data class OutgoingMethodCall(val id: Int, val method: String, val params: Array<Any>, val authentication: Any? = null): JsonRpcObject() {
+data class OutgoingMethodCall(val id: Int, val method: String, val params: Array<Any>): JsonRpcObject() {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

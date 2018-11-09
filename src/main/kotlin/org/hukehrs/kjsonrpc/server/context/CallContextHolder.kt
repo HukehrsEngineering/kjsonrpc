@@ -1,6 +1,6 @@
 package org.hukehrs.kjsonrpc.server.context
 
-import org.hukehrs.kjsonrpc.authentication.AuthenticatedUser
+import org.hukehrs.kjsonrpc.authentication.JsonRpcUser
 import org.hukehrs.kjsonrpc.server.IncomingMethodCall
 
 object CallContextHolder {
@@ -14,11 +14,11 @@ object CallContextHolder {
         return contexts[name] ?: throw NoCallContextException(name)
     }
 
-    fun storeCallContext(authenticatedUser: AuthenticatedUser?, methodCall: IncomingMethodCall)
+    fun storeCallContext(jsonRpcUser: JsonRpcUser?, methodCall: IncomingMethodCall)
     {
         val name = getContextNameForThread()
 
-        contexts[name] = CallContext(authenticatedUser, methodCall)
+        contexts[name] = CallContext(jsonRpcUser, methodCall)
     }
 
     private fun getContextNameForThread(): String {

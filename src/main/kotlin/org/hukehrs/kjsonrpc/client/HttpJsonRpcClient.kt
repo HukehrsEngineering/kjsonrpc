@@ -3,6 +3,7 @@ package org.hukehrs.kjsonrpc.client
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.httpPost
+import io.ktor.http.HttpHeaders
 import org.hukehrs.kjsonrpc.annotations.NeedsAuthentication
 import org.hukehrs.kjsonrpc.authentication.IAuthenticationHolder
 import org.hukehrs.kjsonrpc.jsonrpc.JsonRpcException
@@ -42,14 +43,16 @@ class HttpJsonRpcClient<T: Any> private constructor(private val iface: KClass<T>
         val methodCall = mapper.writeValueAsBytes(OutgoingMethodCall(
             id = getNextCallId(),
             method = "${iface.simpleName}.${method.name}",
-            params = args ?: emptyArray(),
-            authentication = authentication
+            params = args ?: emptyArray()
         ))
 
         //prepare request
         val requestPreparation = uri.httpPost().body(methodCall)
         requestPreparation.headers.clear()
-        requestPreparation.header(HeaderContentType to MediaTypeJson, HeaderAccept to MediaTypeJson)
+        requestPreparation.header(HttpHeaders.ContentType to MediaTypeJson, HttpHeaders.Accept to MediaTypeJson)
+        if(authentication != null) {
+            requestPreparation.header(HttpHeaders.Authorization to "${HttpJsonRpcServer.JsonRpcAuthorizationTokenType} $authentication")
+        }
 
         val start = System.currentTimeMillis()
         try {
@@ -104,15 +107,7 @@ class HttpJsonRpcClient<T: Any> private constructor(private val iface: KClass<T>
                     HttpJsonRpcClient(iface, uri, authenticationHolder)) as T
         }
 
-        val localMethods = arrayOf(
-                "toString", "equals", "hashcode"
-        )
-
         const val MediaTypeJson = "application/json"
-
-        const val HeaderAccept = "Accept"
-
-        const val HeaderContentType = "Content-Type"
     }
 
 }

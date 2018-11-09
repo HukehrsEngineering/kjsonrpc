@@ -4,8 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import org.hukehrs.kjsonrpc.jsonrpc.JsonRpcObject
 import java.util.*
 
-data class IncomingMethodCall(val id: Int, val method: String, val params: Array<JsonNode>,
-                              val authentication: JsonNode? = null): JsonRpcObject()
+data class IncomingMethodCall(val id: Int, val method: String, val params: Array<JsonNode>): JsonRpcObject()
 {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

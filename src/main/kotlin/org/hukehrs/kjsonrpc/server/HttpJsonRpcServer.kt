@@ -8,28 +8,39 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.request.authorization
 import io.ktor.request.receive
 import io.ktor.response.respond
-import org.hukehrs.kjsonrpc.authentication.IAuthenticationChecker
+import org.hukehrs.kjsonrpc.authentication.AuthenticationChecker
+import org.hukehrs.kjsonrpc.authentication.IUserService
 import org.hukehrs.kjsonrpc.jsonrpc.JsonRpcException
 import org.hukehrs.kjsonrpc.jsonrpc.MethodError
 import org.hukehrs.kjsonrpc.server.context.CallContextHolder
 import org.slf4j.LoggerFactory
 
-class HttpJsonRpcServer(private val services: Array<Any>, private val authenticationChecker: IAuthenticationChecker?) {
+class HttpJsonRpcServer(private val services: Array<Any>, private val userService: IUserService) {
 
     companion object {
         val log = LoggerFactory.getLogger(HttpJsonRpcServer::class.java)
 
         val mapper = jacksonObjectMapper().configure(JsonGenerator.Feature.IGNORE_UNKNOWN, true)
+
+        const val JsonRpcAuthorizationTokenType = "JsonRpcToken"
     }
 
-    private fun callMethod(authorization: String?, call: IncomingMethodCall): OutgoingMethodResult
+    private val authenticationChecker = AuthenticationChecker()
+
+    private fun callMethod(authorizationHeader: String?, call: IncomingMethodCall): OutgoingMethodResult
     {
         try {
             val method = MethodIdentifier.createFromFullName(call.method)
             val impl = findAndVerifyImplementation(method)
 
-            if(authenticationChecker != null &&
-                    !authenticationChecker.testAuthentication(authorization, impl.method, impl.iface))
+            val jsonRpcToken = validateTokenAndStripType(authorizationHeader)
+            val user = if(jsonRpcToken != null) {
+                userService.findUserByTokenOrNull(jsonRpcToken)
+            } else {
+                null
+            }
+
+            if(!authenticationChecker.testAuthentication(user, impl.method, impl.iface))
             {
                 throw JsonRpcException("authentication failed", JsonRpcException.errorAuthenticationFailed)
             }
@@ -59,6 +70,21 @@ class HttpJsonRpcServer(private val services: Array<Any>, private val authentica
                 else -> OutgoingMethodResult(call.id, null, MethodError(JsonRpcException.errorServer, throwable.message
                         ?: "internal server error", null))
             }
+        }
+    }
+
+    private fun validateTokenAndStripType(authorizationHeader: String?): String? {
+        return if(authorizationHeader == null)
+        {
+            null
+        }
+        else if(!authorizationHeader.startsWith(JsonRpcAuthorizationTokenType))
+        {
+            null
+        }
+        else
+        {
+            authorizationHeader.substring(JsonRpcAuthorizationTokenType.length+1)
         }
     }
 

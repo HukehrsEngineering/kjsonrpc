@@ -10,17 +10,16 @@ import io.ktor.routing.post
 import io.ktor.routing.routing
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
-import org.hukehrs.kjsonrpc.serverdemo.services.impl.InMemoryAuthenticationChecker
 import org.hukehrs.kjsonrpc.server.HttpJsonRpcServer
 import org.hukehrs.kjsonrpc.serverdemo.services.impl.AuthenticationService
+import org.hukehrs.kjsonrpc.serverdemo.services.impl.InMemoryUserService
 import org.hukehrs.kjsonrpc.serverdemo.services.impl.ServerDemoService
 
 fun main(args: Array<String>)
 {
-    val authenticationChecker = InMemoryAuthenticationChecker()
+    val userService = InMemoryUserService()
     val jsonRpcServer = HttpJsonRpcServer(
-            arrayOf(ServerDemoService(), AuthenticationService(authenticationChecker)),
-            authenticationChecker)
+            arrayOf(ServerDemoService(), AuthenticationService(userService)), userService)
 
     val server = embeddedServer(Netty, port = 61200) {
         install(ContentNegotiation) {

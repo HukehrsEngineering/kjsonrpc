@@ -11,7 +11,7 @@ fun main(args: Array<String>)
 {
     var authenticationService: IAuthenticationService? = null
     val holder = AutoAuthenticationHolder(3) {
-        authenticationService?.authenticate("player1", "password1")
+        authenticationService?.authenticate("player1", "password1")?.token
     }
     val demoService = HttpJsonRpcClient
             .getForInterface(IDemoService::class, "http://localhost:61200/jsonrpc", holder)
