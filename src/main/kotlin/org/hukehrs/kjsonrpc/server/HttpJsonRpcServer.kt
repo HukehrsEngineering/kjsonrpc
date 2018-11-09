@@ -5,11 +5,13 @@ import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.ktor.application.ApplicationCall
 import io.ktor.http.HttpStatusCode
+import io.ktor.request.authorization
 import io.ktor.request.receive
 import io.ktor.response.respond
 import org.hukehrs.kjsonrpc.authentication.IAuthenticationChecker
 import org.hukehrs.kjsonrpc.jsonrpc.JsonRpcException
 import org.hukehrs.kjsonrpc.jsonrpc.MethodError
+import org.hukehrs.kjsonrpc.server.context.CallContextHolder
 import org.slf4j.LoggerFactory
 
 class HttpJsonRpcServer(private val services: Array<Any>, private val authenticationChecker: IAuthenticationChecker?) {
@@ -20,14 +22,14 @@ class HttpJsonRpcServer(private val services: Array<Any>, private val authentica
         val mapper = jacksonObjectMapper().configure(JsonGenerator.Feature.IGNORE_UNKNOWN, true)
     }
 
-    private fun callMethod(call: IncomingMethodCall): OutgoingMethodResult
+    private fun callMethod(authorization: String?, call: IncomingMethodCall): OutgoingMethodResult
     {
         try {
             val method = MethodIdentifier.createFromFullName(call.method)
             val impl = findAndVerifyImplementation(method)
 
             if(authenticationChecker != null &&
-                    !authenticationChecker.testAuthentication(call.authentication, impl.method, impl.iface))
+                    !authenticationChecker.testAuthentication(authorization, impl.method, impl.iface))
             {
                 throw JsonRpcException("authentication failed", JsonRpcException.errorAuthenticationFailed)
             }
@@ -37,6 +39,8 @@ class HttpJsonRpcServer(private val services: Array<Any>, private val authentica
                 return createInvalidParamsError(call.id,
                         "given parameter count (${call.params.size} != required (${impl.method.parameterCount}")
             }
+
+            CallContextHolder.storeCallContext(null, call)
 
             log.trace("starting invoke on proxy")
             val result = impl.method.invoke(impl.impl,
@@ -86,7 +90,7 @@ class HttpJsonRpcServer(private val services: Array<Any>, private val authentica
     {
         val methodCall = call.receive<IncomingMethodCall>()
 
-        val result = callMethod(methodCall)
+        val result = callMethod(call.request.authorization(), methodCall)
 
         val status = if(result.hasError() && isInternalError(result.error!!.code))
         {
